@@ -19,12 +19,13 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "app_main.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,7 +92,28 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  printf("hello usart1\r\n");
+  App_Init();
+
+  // HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+  // // ESC arming: 给 1000us 最低油门，等待 ESC 解锁
+  // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1000);
+  // HAL_Delay(1000);
+
+  // // 逐渐提高油门
+  // for (uint16_t pulse = 1100; pulse <= 1600; pulse += 100)
+  // {
+  //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pulse);
+  //     HAL_Delay(3000);
+  // }
+
+  // // 回到最低油门
+  // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1000);
+  // HAL_Delay(5000);
+
 
   /* USER CODE END 2 */
 
@@ -99,6 +121,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    App_Loop();
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -148,6 +172,16 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+#ifdef __GNUC__
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+  #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
+PUTCHAR_PROTOTYPE
+{
+  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
+  return ch;
+}
 
 /* USER CODE END 4 */
 
