@@ -1,9 +1,4 @@
-cd /mnt/d/drone/stm32/Drone_F407
-
-cat > .gitignore << 'EOF'
-# =========================
 # Build outputs
-# =========================
 build/
 Debug/
 Release/
@@ -24,39 +19,27 @@ Release/
 *.a
 *.lib
 
-# =========================
 # CMake generated files
-# 如果你以后用 CMake，这些也不要 push
-# =========================
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 compile_commands.json
 
-# =========================
 # Editor / IDE files
-# =========================
 .vscode/
 .idea/
 
-# STM32CubeIDE / Eclipse files
-# 你现在不用 CubeIDE，所以可以忽略
+# STM32CubeIDE / Eclipse workspace metadata
 .project
 .cproject
 .settings/
-.mxproject
 
-# =========================
 # OS files
-# =========================
 .DS_Store
 Thumbs.db
 
-# =========================
 # Temporary / log files
-# =========================
 *.log
 *.tmp
 *.bak
 *.swp
-EOF
