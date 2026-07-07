@@ -94,26 +94,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  printf("hello usart1\r\n");
   App_Init();
-
-  // HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-
-  // // ESC arming: 给 1000us 最低油门，等待 ESC 解锁
-  // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1000);
-  // HAL_Delay(1000);
-
-  // // 逐渐提高油门
-  // for (uint16_t pulse = 1100; pulse <= 1600; pulse += 100)
-  // {
-  //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pulse);
-  //     HAL_Delay(3000);
-  // }
-
-  // // 回到最低油门
-  // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1000);
-  // HAL_Delay(5000);
-
 
   /* USER CODE END 2 */
 

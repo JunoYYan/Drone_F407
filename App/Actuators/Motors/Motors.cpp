@@ -58,3 +58,30 @@ uint16_t Motors::clampPulse(uint16_t pulse_us)
 
     return pulse_us;
 }
+
+void Motors::setMotorOutputs(
+    const MotorOutput& output
+)
+{
+
+    setPulse(
+        MotorId::M1,
+        output.m1
+    );
+
+    setPulse(
+        MotorId::M2,
+        output.m2
+    );
+
+    setPulse(
+        MotorId::M3,
+        output.m3
+    );
+
+    setPulse(
+        MotorId::M4,
+        output.m4
+    );
+
+}

@@ -2,6 +2,7 @@
 
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
+#include "Algorithm/Mixer/Mixer.hpp"
 
 enum class MotorId : uint8_t
 {
@@ -26,6 +27,10 @@ public:
     void setAllPulse(uint16_t pulse_us);
 
     void stop();
+
+    void setMotorOutputs(
+        const MotorOutput& output
+    );
 
 private:
     TIM_HandleTypeDef* htim_;

@@ -1,4 +1,5 @@
 #include "MPU6050.hpp"
+#include <cstdio>
 
 MPU6050::MPU6050(I2C_HandleTypeDef *hi2c)
 {
@@ -64,8 +65,11 @@ bool MPU6050::calibrate(uint16_t samples, uint32_t delay_ms)
     {
         uint8_t data[14];
 
-        if (!readRegs(0x3B, data, 14))
+        if (!readRegs(0x3B, data, 14)){
+            printf("MPU6050 read failed at sample %d\r\n", i);
             return false;
+        }
+            
 
         int16_t ax_raw = (int16_t)((data[0] << 8) | data[1]);
         int16_t ay_raw = (int16_t)((data[2] << 8) | data[3]);

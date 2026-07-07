@@ -4,6 +4,9 @@
 #include "MPU6050.hpp"
 #include "GPS.hpp"
 #include "Actuators/Motors/Motors.hpp"
+#include "Algorithm/PID/PID.hpp"
+#include "Algorithm/Filter/ComplementaryFilter.hpp"
+#include "Algorithm/Mixer/Mixer.hpp"
 
 class FlightController {
 public:
@@ -29,6 +32,15 @@ private:
     GPS gps_;
     Motors motors_;
 
+    ComplementaryFilter attitude_;
+
+    PID pitchAnglePID_;
+    PID rollAnglePID_;
+
+    PID pitchRatePID_;
+    PID rollRatePID_;
+
+    Mixer mixer_;
 
     State state_ = State::Init;
 

@@ -1,27 +1,68 @@
 #include "FlightController.hpp"
 #include <cstdio>
+#include <cmath>
+
 
 FlightController::FlightController(
     I2C_HandleTypeDef* hi2c,
     TIM_HandleTypeDef* htim_motor
-)
-    : imu_(hi2c),
-      motors_(htim_motor)
-{
-}
+) : 
+    imu_(hi2c),
+    motors_(htim_motor),
+    mixer_(),
+    attitude_(0.98f),
+
+    pitchAnglePID_(
+        8.0f,
+        0,
+        0,
+        200
+    ),
+
+    rollAnglePID_(
+        8.0f,
+        0,
+        0,
+        200
+    ),
+
+
+    pitchRatePID_(
+        0.5f,
+        0,
+        0,
+        500
+    ),
+
+    rollRatePID_(
+        0.5f,
+        0,
+        0,
+        500
+    )
+
+{}
+
 
 void FlightController::init()
 {
+    // gps_.init();
+
     motors_.init();
     motors_.stop();
-
     HAL_Delay(5000);
 
-    imu_.init();
-    gps_.init();
+    if(!imu_.init())
+    {
+        printf("MPU6050 init failed!\r\n");
+        state_ = State::Error;
+        return;
+    }
 
-    state_ = State::Calibrating;
+    printf("MPU6050 init success!\r\n");
+
 }
+
 
 void FlightController::update()
 {
@@ -52,10 +93,12 @@ void FlightController::update()
     }
 }
 
+
 void FlightController::handleInit()
 {
     state_ = State::Calibrating;
 }
+
 
 void FlightController::handleCalibrating()
 {   
@@ -63,7 +106,7 @@ void FlightController::handleCalibrating()
 
     printf("IMU calibrating... Keep drone still and level.\r\n");
 
-    bool ok = imu_.calibrate(1000, 2);
+    bool ok = imu_.calibrate(1000, 2); // 每隔2ms采样1000次
 
     if (!ok)
     {
@@ -74,63 +117,131 @@ void FlightController::handleCalibrating()
 
     imu_.update();
 
+    float pitch0 = atan2(imu_.ax, imu_.az) * 180.0f / 3.1415926f;
+    float roll0 = atan2(imu_.ay, imu_.az) * 180.0f / 3.1415926f;
+
+    attitude_.reset(
+        pitch0,
+        roll0
+    );
+
     printf("IMU calibration done.\r\n");
-    printf("ax: %.2f ay: %.2f az: %.2f gx: %.2f gy: %.2f gz: %.2f\r\n",
-        imu_.ax,
-        imu_.ay,
-        imu_.az,
-        imu_.gx,
-        imu_.gy,
-        imu_.gz);
+    // printf("ax: %.2f ay: %.2f az: %.2f gx: %.2f gy: %.2f gz: %.2f\r\n",
+    //     imu_.ax,
+    //     imu_.ay,
+    //     imu_.az,
+    //     imu_.gx,
+    //     imu_.gy,
+    //     imu_.gz);
 
     state_ = State::Idle;
 }
+
 
 void FlightController::handleIdle()
 {
     motors_.stop();
     imu_.update();
-    printf("ax: %.2f ay: %.2f az: %.2f gx: %.2f gy: %.2f gz: %.2f\r\n",
+    
+    float dt = 0.01f;
+    attitude_.update(
         imu_.ax,
         imu_.ay,
         imu_.az,
         imu_.gx,
         imu_.gy,
-        imu_.gz);
+        dt
+    ); // 不断更新最近的pitch和roll
+
+    printf(
+        "pitch %.2f roll %.2f\r\n",
+        attitude_.getPitch(),
+        attitude_.getRoll()
+    );
     
-    HAL_Delay(1000);
+    HAL_Delay(10);
 
-    // state_ = State::Armed;
-
-    // 这里未来加：
-    // arm switch / RC input
-
-    // 示例：
-    // if (rc.arm == true)
-    //     state_ = State::Armed;
+    state_=State::Armed;
 }
+
 
 void FlightController::handleArmed()
 {
     imu_.update();
 
-    for (uint16_t pulse = 1200; pulse <= 1300; pulse += 100)
-    {
-        motors_.setAllPulse(pulse);
-        HAL_Delay(3000);
-    }
+    float dt = 0.01f;
 
-    
+    attitude_.update(
+        imu_.ax,
+        imu_.ay,
+        imu_.az,
+        imu_.gx,
+        imu_.gy,
+        dt
+    ); // 不断更新最近的pitch和roll
 
-    motors_.stop();
+    float pitch = attitude_.getPitch();
+    float roll = attitude_.getRoll();
 
-    state_ = State::SafeStop;
 
-    // 飞控核心（以后加）
-    // - attitude estimation
-    // - PID control
-    // - motor output
+    // Angle PID
+    float targetPitchRate =
+        pitchAnglePID_.update(
+            0,
+            pitch,
+            dt
+        );
+
+
+    float targetRollRate =
+        rollAnglePID_.update(
+            0,
+            roll,
+            dt
+        );
+
+
+    // Rate PID
+    float pitchCorrection =
+        pitchRatePID_.updateRate(
+            targetPitchRate,
+            imu_.gy,
+            dt
+        );
+
+
+    float rollCorrection =
+        rollRatePID_.updateRate(
+            targetRollRate,
+            imu_.gx,
+            dt
+        );
+
+
+    // Mixer
+    MotorOutput motors =
+        mixer_.mix(
+            1300, // throttle
+            pitchCorrection,
+            rollCorrection,
+            0
+        );
+
+    printf(
+        "M1:%d M2:%d M3:%d M4:%d\r\n",
+        motors.m1,
+        motors.m2,
+        motors.m3,
+        motors.m4
+    );
+
+
+    motors_.setMotorOutputs(motors);
+
+    HAL_Delay(10);
+
 }
+
 
 void FlightController::handleSafeStop()
 {

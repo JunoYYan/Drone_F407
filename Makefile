@@ -71,7 +71,10 @@ App/app_main.cpp \
 App/Controller/FlightController.cpp \
 App/Sensors/IMU/MPU6050.cpp \
 App/Sensors/GPS/GPS.cpp \
-App/Actuators/Motors/Motors.cpp
+App/Actuators/Motors/Motors.cpp \
+App/Algorithm/Filter/ComplementaryFilter.cpp \
+App/Algorithm/PID/PID.cpp \
+App/Algorithm/Mixer/Mixer.cpp
 
 # ASM sources
 ASM_SOURCES =  \
