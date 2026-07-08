@@ -31,15 +31,36 @@ void UartReceiver::update()
         ) == HAL_OK
     )
     {
-        // 一键急停：只要收到 X/x，立刻 disarm，不需要回车
+        // 一键急停：X / x，立刻 DISARM，不需要回车
         if(c == 'X' || c == 'x')
         {
             disarmCommand_ = true;
+            throttle_ = 1000;
             index_ = 0;
             return;
         }
 
-        // 处理回车：PuTTY 可能发 \r，也可能发 \n
+        // 单键油门：
+        // 1 -> 1100
+        // 2 -> 1200
+        // ...
+        // 9 -> 1900
+        // 0 -> 2000
+        if(c >= '1' && c <= '9')
+        {
+            throttle_ = 1000 + (c - '0') * 100;
+            index_ = 0;
+            return;
+        }
+
+        if(c == '0')
+        {
+            throttle_ = 1000; // 暂时调成1000，满油门是2000
+            index_ = 0;
+            return;
+        }
+
+        // PuTTY 回车可能是 \r，也可能是 \n
         if(c == '\r' || c == '\n')
         {
             if(index_ == 0)
@@ -56,6 +77,7 @@ void UartReceiver::update()
             else if(strcmp(buffer_, "DISARM") == 0)
             {
                 disarmCommand_ = true;
+                throttle_ = 1000;
             }
             else if(strncmp(buffer_, "THROTTLE", 8) == 0)
             {
