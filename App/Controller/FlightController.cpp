@@ -206,7 +206,7 @@ void FlightController::handleArmed()
         throttle_ = 1000;
         motors_.stop();
         state_ = State::Disarmed;
-        return;
+        // return;
     }
 
 
