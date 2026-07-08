@@ -7,13 +7,15 @@
 #include "Algorithm/PID/PID.hpp"
 #include "Algorithm/Filter/ComplementaryFilter.hpp"
 #include "Algorithm/Mixer/Mixer.hpp"
+#include "UART/UartReceiver.hpp"
 
 class FlightController {
 public:
     enum class State {
         Init,
         Calibrating,
-        Idle,
+        // Idle,
+        Disarmed,
         Armed,
         Error,
         SafeStop
@@ -21,7 +23,8 @@ public:
 
     FlightController(
         I2C_HandleTypeDef *hi2c,
-        TIM_HandleTypeDef* htim_motor
+        TIM_HandleTypeDef* htim_motor,
+        UART_HandleTypeDef* huart
     );
 
     void init();
@@ -42,11 +45,17 @@ private:
 
     Mixer mixer_;
 
+    UartReceiver receiver_;
+    uint16_t throttle_;
+
     State state_ = State::Init;
 
     void handleInit();
     void handleCalibrating();
-    void handleIdle();
+    // void handleIdle();
+    void handleDisarmed();
     void handleArmed();
     void handleSafeStop();
+
+
 };

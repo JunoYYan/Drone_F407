@@ -5,10 +5,12 @@
 
 FlightController::FlightController(
     I2C_HandleTypeDef* hi2c,
-    TIM_HandleTypeDef* htim_motor
+    TIM_HandleTypeDef* htim_motor,
+    UART_HandleTypeDef* huart
 ) : 
     imu_(hi2c),
     motors_(htim_motor),
+    receiver_(huart),
     mixer_(),
     attitude_(0.98f),
 
@@ -39,7 +41,9 @@ FlightController::FlightController(
         0,
         0,
         500
-    )
+    ),
+
+    throttle_(1000)
 
 {}
 
@@ -66,30 +70,51 @@ void FlightController::init()
 
 void FlightController::update()
 {
+    receiver_.update();
+
+    if(receiver_.consumeDisarmCommand())
+    {
+        printf("DISARM received!\r\n");
+
+        throttle_ = 1000;
+        motors_.stop();
+        state_ = State::Disarmed;
+    }
+
+    if(receiver_.consumeArmCommand())
+    {
+        printf("ARM received!\r\n");
+        state_ = State::Armed;
+    }
+
+
     switch (state_) {
+        case State::Init:
+            handleInit();
+            break;
 
-    case State::Init:
-        handleInit();
-        break;
+        case State::Calibrating:
+            handleCalibrating();
+            break;
 
-    case State::Calibrating:
-        handleCalibrating();
-        break;
+        case State::Disarmed:
+            handleDisarmed();
+            break;
 
-    case State::Idle:
-        handleIdle();
-        break;
+        // case State::Idle:
+        //     handleIdle();
+        //     break;
 
-    case State::Armed:
-        handleArmed();
-        break;
+        case State::Armed:
+            handleArmed();
+            break;
 
-    case State::Error:
-        break;
-    
-    case State::SafeStop:
-        handleSafeStop();
-        break;
+        case State::Error:
+            break;
+        
+        case State::SafeStop:
+            handleSafeStop();
+            break;
     }
 }
 
@@ -134,39 +159,59 @@ void FlightController::handleCalibrating()
     //     imu_.gy,
     //     imu_.gz);
 
-    state_ = State::Idle;
+    // state_ = State::Idle;
+    state_ = State::Disarmed;
 }
 
 
-void FlightController::handleIdle()
+void FlightController::handleDisarmed()
 {
     motors_.stop();
-    imu_.update();
-    
-    float dt = 0.01f;
-    attitude_.update(
-        imu_.ax,
-        imu_.ay,
-        imu_.az,
-        imu_.gx,
-        imu_.gy,
-        dt
-    ); // 不断更新最近的pitch和roll
 
-    printf(
-        "pitch %.2f roll %.2f\r\n",
-        attitude_.getPitch(),
-        attitude_.getRoll()
-    );
-    
-    HAL_Delay(10);
-
-    state_=State::Armed;
 }
+
+
+// void FlightController::handleIdle()
+// {
+//     motors_.stop();
+//     imu_.update();
+    
+//     float dt = 0.01f;
+//     attitude_.update(
+//         imu_.ax,
+//         imu_.ay,
+//         imu_.az,
+//         imu_.gx,
+//         imu_.gy,
+//         dt
+//     ); // 不断更新最近的pitch和roll
+
+//     printf(
+//         "pitch %.2f roll %.2f\r\n",
+//         attitude_.getPitch(),
+//         attitude_.getRoll()
+//     );
+    
+//     HAL_Delay(10);
+
+//     state_=State::Armed;
+// }
 
 
 void FlightController::handleArmed()
 {
+    if(receiver_.consumeDisarmCommand())
+    {
+        printf("DISARM received in Armed state!\r\n");
+        throttle_ = 1000;
+        motors_.stop();
+        state_ = State::Disarmed;
+        return;
+    }
+
+
+    throttle_ = receiver_.getThrottle();
+
     imu_.update();
 
     float dt = 0.01f;
@@ -221,24 +266,30 @@ void FlightController::handleArmed()
     // Mixer
     MotorOutput motors =
         mixer_.mix(
-            1300, // throttle
+            throttle_, // throttle
             pitchCorrection,
             rollCorrection,
             0
         );
 
-    printf(
-        "M1:%d M2:%d M3:%d M4:%d\r\n",
-        motors.m1,
-        motors.m2,
-        motors.m3,
-        motors.m4
-    );
-
-
     motors_.setMotorOutputs(motors);
+    
 
-    HAL_Delay(10);
+    static uint32_t lastPrintTime = 0;
+
+    if(HAL_GetTick() - lastPrintTime >= 500)
+    {
+        lastPrintTime = HAL_GetTick();
+
+        printf(
+            "M1:%d M2:%d M3:%d M4:%d throttle:%d\r\n",
+            motors.m1,
+            motors.m2,
+            motors.m3,
+            motors.m4,
+            throttle_
+        );
+    }
 
 }
 

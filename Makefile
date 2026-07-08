@@ -74,7 +74,8 @@ App/Sensors/GPS/GPS.cpp \
 App/Actuators/Motors/Motors.cpp \
 App/Algorithm/Filter/ComplementaryFilter.cpp \
 App/Algorithm/PID/PID.cpp \
-App/Algorithm/Mixer/Mixer.cpp
+App/Algorithm/Mixer/Mixer.cpp \
+Drivers/UART/UartReceiver.cpp
 
 # ASM sources
 ASM_SOURCES =  \
@@ -143,10 +144,12 @@ C_INCLUDES =  \
 -IApp/Sensors/IMU \
 -IApp/Sensors/GPS \
 -IApp/Common \
+-IDrivers \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include
+
 
 
 # compile gcc flags
