@@ -11,10 +11,12 @@ STM32F4 drone firmware project.
 ## Compile
 ```bash
 make -j$(nproc)
+```
 
 ## Flash
 ```bash
 sudo openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program build/Drone_F407.elf verify reset exit"
+```
 
 ## USB Setup (WSL)
 
