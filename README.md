@@ -9,9 +9,11 @@ STM32F4 drone firmware project.
 - STM32 toolchain (arm-none-eabi-gcc, etc.)
 
 ## Compile
+```bash
 make -j$(nproc)
 
 ## Flash
+```bash
 sudo openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program build/Drone_F407.elf verify reset exit"
 
 ## USB Setup (WSL)
